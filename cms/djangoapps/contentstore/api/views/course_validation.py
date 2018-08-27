@@ -12,6 +12,7 @@ from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_c
 from xmodule.course_metadata_utils import DEFAULT_GRADING_POLICY
 from xmodule.modulestore.django import modulestore
 
+from util.course import has_certificates_enabled
 from .utils import get_bool_param, course_author_access_required
 
 
@@ -207,7 +208,8 @@ class CourseValidationView(DeveloperErrorViewMixin, GenericAPIView):
         is_activated, certificates = CertificateManager.is_activated(course)
         return dict(
             is_activated=is_activated,
-            has_certificate=len(certificates) > 0,
+            has_certificate=certificates is not None and len(certificates) > 0,
+            is_enabled=has_certificates_enabled(course),
         )
 
     def _updates_validation(self, course, request):
