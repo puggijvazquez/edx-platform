@@ -1,9 +1,9 @@
 """ a collection of utililty decorators for paver tasks """
 
 import multiprocessing
-import psutil
 from functools import wraps
 
+import psutil
 
 def timeout(limit=60):
     """
