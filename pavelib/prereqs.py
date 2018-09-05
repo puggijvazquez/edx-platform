@@ -130,7 +130,7 @@ def node_prereqs_installation():
     Configures npm and installs Node prerequisites
     """
 
-    @timeout(limit=200)
+    @timeout(limit=300)
     def _run_npm_command(npm_command, npm_log_file):
         """
         helper function for running the npm installation with a timeout.
