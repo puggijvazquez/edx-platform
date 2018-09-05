@@ -125,11 +125,22 @@ def prereq_cache(cache_name, paths, install_func):
         print '{cache} unchanged, skipping...'.format(cache=cache_name)
 
 
-@timeout(limit=120)
 def node_prereqs_installation():
     """
     Configures npm and installs Node prerequisites
     """
+
+    @timeout(limit=200)
+    def _run_npm_command(npm_command, npm_log_file):
+        """
+        helper function for running the npm installation with a timeout.
+        The implementation of Paver's `sh` function returns before the forked
+        actually returns. Using a Popen object so that we can ensure that
+        the forked process has returned
+        """
+        proc = subprocess.Popen(npm_command, stderr=npm_log_file)
+        proc.wait()
+
     # NPM installs hang sporadically. Log the installation process so that we
     # determine if any packages are chronic offenders.
     shard_str = os.getenv('SHARD', None)
@@ -146,23 +157,15 @@ def node_prereqs_installation():
     # evinces itself as `cb_error_text` and it ought to disappear when we upgrade
     # npm to 3 or higher. TODO: clean this up when we do that.
     try:
-        # The implementation of Paver's `sh` function returns before the forked
-        # actually returns. Using a Popen object so that we can ensure that
-        # the forked process has returned
-        proc = subprocess.Popen(npm_command, stderr=npm_log_file)
-        proc.wait()
+        _run_npm_command(npm_command, npm_log_file)
     except TimeoutException:
-        # Since we are using @timeout on a function that forks another process, we need to
-        # make sure that the children processes are killed
-        kill_process(proc)
         print "NPM installation took too long. Exiting..."
         print "Check {} for more information".format(npm_log_file_path)
         sys.exit(1)
     except BuildFailure, error_text:
         if cb_error_text in error_text:
             print "npm install error detected. Retrying..."
-            proc = subprocess.Popen(npm_command, stderr=npm_log_file)
-            proc.wait()
+            _run_npm_command(npm_command, npm_log_file)
         else:
             raise BuildFailure(error_text)
     print "Successfully installed NPM packages. Log found at {}".format(

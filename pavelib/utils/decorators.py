@@ -1,6 +1,7 @@
 """ a collection of utililty decorators for paver tasks """
 
 import multiprocessing
+import psutil
 from functools import wraps
 
 
@@ -39,6 +40,9 @@ def timeout(limit=60):
             function_proc.start()
             function_proc.join(float(limit))
             if function_proc.is_alive():
+                pid = psutil.Process(function_proc.pid)
+                for child in pid.get_children(recursive=True):
+                    child.terminate()
                 function_proc.terminate()
                 raise TimeoutException
             function_output = queue.get()
